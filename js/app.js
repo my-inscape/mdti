@@ -555,11 +555,11 @@
   }
 
   async function buildCardFile(code) {
-    // Webフォントの読み込みが保留のままになる環境があるため待ちすぎない
-    if (document.fonts && document.fonts.ready) {
+    // 共有シートはユーザー操作の直後でないと弾かれるため、フォント待ちは短くする
+    if (document.fonts && document.fonts.status !== 'loaded' && document.fonts.ready) {
       await Promise.race([
         Promise.resolve(document.fonts.ready).catch(() => undefined),
-        new Promise(resolve => setTimeout(resolve, 1500))
+        new Promise(resolve => setTimeout(resolve, 200))
       ]);
     }
 
@@ -573,7 +573,15 @@
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
     });
-    return new File([blob], `MUDA_${code}.png`, { type: 'image/png' });
+
+    // Object URL → fetch → File にすると、iOS の canShare({ files }) が安定しやすい
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const sharedBlob = await fetch(objectUrl).then(res => res.blob());
+      return new File([sharedBlob], `MUDA_${code}.png`, { type: 'image/png' });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 
   function downloadFile(file) {
@@ -585,6 +593,7 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /* スマホは共有シート→「画像を保存」でカメラロールへ。非対応環境は download にフォールバック */
   async function saveResultImage(code) {
     let file;
     try {
@@ -594,14 +603,25 @@
       return;
     }
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    const canShareFiles =
+      typeof navigator.share === 'function' &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files: [file] });
+
+    if (canShareFiles) {
       try {
-        await navigator.share({ files: [file], text: shareCaption(code) });
-        return;
+        await navigator.share({
+          files: [file],
+          title: 'MUDAパーソナル診断結果'
+        });
       } catch (err) {
-        if (err && err.name === 'AbortError') return;   // ユーザーが共有をキャンセル
-        // 共有できなかった場合は保存にフォールバックする
+        // 共有シートのキャンセルは何も出さず無視
+        if (err && err.name === 'AbortError') return;
+        // それ以外（ユーザー操作タイムアウト等）は従来のダウンロードへ
+        downloadFile(file);
+        toast('結果画像を保存しました');
       }
+      return;
     }
 
     downloadFile(file);
