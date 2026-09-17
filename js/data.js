@@ -2,10 +2,10 @@
 
 /* 4段階・真ん中なしの選択肢（内部スコア付き） */
 const CHOICES = [
-  { label: '全く違う', score: -2, hint: '1' },
-  { label: 'あまりそうではない', score: -1, hint: '2' },
-  { label: 'まあまあそう', score: 1, hint: '3' },
-  { label: 'めちゃくちゃ当てはまる', score: 2, hint: '4' }
+  { label: '全く違う', score: -2 },
+  { label: 'あまりそうではない', score: -1 },
+  { label: 'まあまあそう', score: 1 },
+  { label: 'めちゃくちゃ当てはまる', score: 2 }
 ];
 
 /* 8問。kind: 'decisive' = 決定打問(×-2) / 'standard' = 標準問(×+1) */
@@ -69,15 +69,13 @@ const RESULT_COMMON_MESSAGE =
   'どうぞ、堂々と持ち帰ってください。';
 
 /* 結果画面の末尾に置く公式注記 */
-const OFFICIAL_NOTE_TEXT =
+const OFFICIAL_NOTE =
+  '<aside class="official-note">' +
+  '<p class="official-note-title">［測定不能に関する公式注記］</p>' +
+  '<p class="official-note-text">' +
   '※万が一「1ミリもかすってない」と感じた場合、あなたが思っている以上にあなた自身がミステリアスな存在であります。' +
-  '当サービスでは測定不能です。申し訳ありません。';
-
-const OFFICIAL_NOTE = `
-  <aside class="official-note">
-    <p class="official-note-title">［測定不能に関する公式注記］</p>
-    <p class="official-note-text">${OFFICIAL_NOTE_TEXT}</p>
-  </aside>`;
+  '当サービスでは測定不能です。申し訳ありません。' +
+  '</p></aside>';
 
 /* 16タイプ。sheetNo は元イラスト一覧での番号 */
 const TYPES = {
