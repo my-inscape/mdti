@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MDTI｜無駄タイプインジケーター - あなたの「愛おしい無駄」を測定する16タイプ診断</title>
+<meta name="description" content="役に立つ自分は、履歴書に書けばいい。あなたの日常に潜む「1ミリも役に立たない無駄」を高精度にプロファイリングし、16の類型として堂々と肯定するエンターテインメント診断。全8問・約1分。">
+<meta name="theme-color" content="#faf7f2">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MDTI｜無駄タイプインジケーター">
+<meta property="og:description" content="あなたの「愛おしい無駄」を測定する16タイプ診断。所要時間は約1分。">
+<meta property="og:image" content="assets/mdti-sheet.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="site-head">
+  <a class="brand" href="#/" data-nav>
+    <span class="brand-mark">MDTI</span>
+    <span class="brand-sub">無駄タイプインジケーター</span>
+  </a>
+  <button class="ghost-btn" type="button" data-action="open-gallery">16タイプ一覧</button>
+</header>
+
+<main id="app">
+
+  <!-- ============ A. イントロ ============ -->
+  <section class="screen" id="screen-intro" data-screen="intro">
+    <div class="wrap wrap-narrow">
+
+      <div class="hero">
+        <p class="hero-eyebrow">Muda Type Indicator</p>
+        <h1 class="hero-title">MDTI</h1>
+        <p class="hero-subtitle">無駄タイプインジケーター</p>
+        <p class="hero-catch">
+          役に立つ自分は、履歴書に書けばいい。<br>
+          あなたの「愛おしい無駄」を測定する16タイプ診断。
+        </p>
+
+        <div class="hero-strip" aria-hidden="true">
+          <img src="assets/types/ORSK.png" alt="">
+          <img src="assets/types/ICAK.png" alt="">
+          <img src="assets/types/ORSD.png" alt="">
+          <img src="assets/types/IRAD.png" alt="">
+        </div>
+
+        <button class="primary-btn" type="button" data-action="start">
+          無駄を測定する（全8問）
+        </button>
+        <p class="hero-note">所要時間は約1分。直感でお答えください。</p>
+      </div>
+
+      <div class="paper">
+        <p>現代社会は、効率と合理性ばかりを求めすぎている。</p>
+        <p>「何の役に立つのか」「生産性はあるのか」——<br>
+          そんな息苦しい評価軸からはみ出してしまう、あなたのどうでもいい癖、無意味なこだわり、無自覚なやらかし。</p>
+        <p>でも、それこそがAIには絶対に模倣できない、あなたという人間の「愛嬌」であり「防衛本能」です。</p>
+        <p>MDTIは、あなたの日常に潜む「1ミリも役に立たない無駄」を高精度にプロファイリングし、
+          16の類型として堂々と肯定するエンターテインメント診断です。</p>
+      </div>
+
+      <div class="axis-intro">
+        <h2 class="section-title">測定する4つの無駄軸</h2>
+        <ul class="axis-list" id="axis-intro-list"></ul>
+      </div>
+
+      <div class="center-actions">
+        <button class="primary-btn" type="button" data-action="start">
+          無駄を測定する（全8問）
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ B. 質問 ============ -->
+  <section class="screen" id="screen-question" data-screen="question" hidden>
+    <div class="wrap wrap-narrow">
+      <div class="q-head">
+        <div class="q-progress">
+          <span class="q-count"><b id="q-index">1</b> <i>/ 8</i></span>
+          <div class="q-bar"><div class="q-bar-fill" id="q-bar-fill"></div></div>
+        </div>
+        <p class="q-axis" id="q-axis"></p>
+      </div>
+
+      <div class="q-card" id="q-card">
+        <p class="q-id" id="q-id">Q1</p>
+        <h2 class="q-text" id="q-text"></h2>
+      </div>
+
+      <div class="q-choices" id="q-choices" role="group" aria-label="回答を選択"></div>
+
+      <div class="q-foot">
+        <button class="back-btn" type="button" data-action="back-question">
+          <span class="back-arrow" aria-hidden="true">←</span>
+          <span id="back-label">1つ前の質問に戻る</span>
+        </button>
+        <span class="q-hint">キーボードの 1〜4 でも回答できます</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ D. 結果 ============ -->
+  <section class="screen" id="screen-result" data-screen="result" hidden>
+    <div class="wrap">
+      <div id="result-body"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap wrap-narrow">
+    <p class="foot-heading">法的免責事項</p>
+    <p class="foot-text">
+      本サービス「MDTI（Muda Type Indicator）」は、日常の無駄や愛嬌を楽しむための独自のエンターテインメント診断です。
+      実在する心理学的検査、性格診断指標、特定の学術機関、または登録商標とは一切関係ありません。
+    </p>
+  </div>
+</footer>
+
+<!-- 16タイプ一覧 -->
+<div class="sheet-overlay" id="gallery" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="16タイプ一覧">
+    <div class="sheet-head">
+      <h2>無駄タイプ図鑑（全16タイプ）</h2>
+      <button class="icon-btn" type="button" data-action="close-gallery" aria-label="閉じる">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
