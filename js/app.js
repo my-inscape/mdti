@@ -1,5 +1,5 @@
 /* ============================================================
-   MDTI - Muda Type Indicator : 画面遷移・スコアリング・シェア
+   MUDAパーソナル診断 : 画面遷移・スコアリング・シェア
    ============================================================ */
 (function () {
   'use strict';
@@ -316,6 +316,8 @@
           ${matchCard('worst', type.worst)}
         </div>
 
+        ${isMine ? OFFICIAL_NOTE : ''}
+
         ${isMine ? shareBlock(code) : ''}
 
         <div class="result-actions">
@@ -504,8 +506,8 @@
     return lines;
   }
 
-  const HUE_HEX = { violet: '#8d81b8', sage: '#7ba189', azure: '#7b95cc', amber: '#cfa547' };
-  const HUE_TINT = { violet: '#f1eef9', sage: '#eaf2ec', azure: '#ebf0fa', amber: '#faf3e1' };
+  const HUE_HEX = { violet: '#c97a63', sage: '#7f9a83', azure: '#6b8ba4', amber: '#d4a359' };
+  const HUE_TINT = { violet: '#f6ebe6', sage: '#ebf0ec', azure: '#e8eef2', amber: '#f6efe3' };
 
   const JP_FONT = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif';
   const CODE_FONT = '"Outfit","Avenir Next",sans-serif';
@@ -529,11 +531,11 @@
   function drawArtPlate(ctx, art, box) {
     const pad = 24;
     ctx.save();
-    ctx.shadowColor = 'rgba(59, 55, 66, .12)';
+    ctx.shadowColor = 'rgba(58, 53, 48, .12)';
     ctx.shadowBlur = 26;
     ctx.shadowOffsetY = 10;
     ctx.fillStyle = '#ffffff';
-    roundRect(ctx, box.x - pad, box.y - pad, box.w + pad * 2, box.h + pad * 2, 26);
+    roundRect(ctx, box.x - pad, box.y - pad, box.w + pad * 2, box.h + pad * 2, 30);
     ctx.restore();
     ctx.drawImage(art, box.x, box.y, box.w, box.h);
   }
@@ -541,14 +543,14 @@
   /* 1200×630（OG・X・Facebook向けの横長） */
   function drawWideCard(ctx, code, type, art) {
     const W = 1200, H = 630;
-    ctx.fillStyle = '#faf7f2';
+    ctx.fillStyle = '#faf8f5';
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = HUE_TINT[type.hue];
     ctx.fillRect(620, 0, W - 620, H);
 
     drawArtPlate(ctx, art, artRect(art, 655, 70, 470, 480, 1.1));
 
-    ctx.fillStyle = '#a09aac';
+    ctx.fillStyle = '#9a9186';
     ctx.font = '500 22px ' + JP_FONT;
     ctx.fillText('MDTI ／ 無駄タイプインジケーター', 70, 96);
 
@@ -556,18 +558,18 @@
     ctx.font = '700 118px ' + CODE_FONT;
     ctx.fillText(code, 66, 226);
 
-    ctx.fillStyle = '#3b3742';
+    ctx.fillStyle = '#3a3530';
     ctx.font = '700 46px ' + JP_FONT;
     const nameLines = wrapText(ctx, type.name, 500);
     nameLines.forEach((l, i) => ctx.fillText(l, 70, 300 + i * 58));
 
-    ctx.fillStyle = '#6d6878';
+    ctx.fillStyle = '#6e665c';
     ctx.font = '500 23px ' + JP_FONT;
     const tagLines = wrapText(ctx, '「' + type.tagline + '」', 500, 3);
     const tagTop = 300 + nameLines.length * 58 + 22;
     tagLines.forEach((l, i) => ctx.fillText(l, 70, tagTop + i * 38));
 
-    ctx.fillStyle = '#a09aac';
+    ctx.fillStyle = '#9a9186';
     ctx.font = '500 21px ' + JP_FONT;
     ctx.fillText(CARD_FOOTER, 70, H - 62);
   }
@@ -575,12 +577,12 @@
   /* 1080×1350（Instagramのフィード・ストーリー向けの縦長） */
   function drawPortraitCard(ctx, code, type, art) {
     const W = 1080, H = 1350, cx = W / 2;
-    ctx.fillStyle = '#faf7f2';
+    ctx.fillStyle = '#faf8f5';
     ctx.fillRect(0, 0, W, H);
 
     ctx.textAlign = 'center';
 
-    ctx.fillStyle = '#a09aac';
+    ctx.fillStyle = '#9a9186';
     ctx.font = '500 26px ' + JP_FONT;
     ctx.fillText('MDTI ／ 無駄タイプインジケーター', cx, 112);
 
@@ -592,18 +594,18 @@
     ctx.font = '700 150px ' + CODE_FONT;
     ctx.fillText(code, cx, 920);
 
-    ctx.fillStyle = '#3b3742';
+    ctx.fillStyle = '#3a3530';
     ctx.font = '700 58px ' + JP_FONT;
     const nameLines = wrapText(ctx, type.name, 880);
     nameLines.forEach((l, i) => ctx.fillText(l, cx, 1005 + i * 72));
 
-    ctx.fillStyle = '#6d6878';
+    ctx.fillStyle = '#6e665c';
     ctx.font = '500 30px ' + JP_FONT;
     const tagLines = wrapText(ctx, '「' + type.tagline + '」', 860, 3);
     const tagTop = 1005 + nameLines.length * 72 + 30;
     tagLines.forEach((l, i) => ctx.fillText(l, cx, tagTop + i * 48));
 
-    ctx.fillStyle = '#a09aac';
+    ctx.fillStyle = '#9a9186';
     ctx.font = '500 24px ' + JP_FONT;
     ctx.fillText(CARD_FOOTER, cx, H - 64);
   }

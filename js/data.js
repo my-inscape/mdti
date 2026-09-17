@@ -1,4 +1,4 @@
-/* MDTI - Muda Type Indicator : 診断データ */
+/* MUDAパーソナル診断 : 診断データ */
 
 /* 4段階・真ん中なしの選択肢（内部スコア付き） */
 const CHOICES = [
@@ -67,6 +67,17 @@ const AXES = [
 const RESULT_COMMON_MESSAGE =
   'これは欠点リストではありません。効率の物差しでは絶対に測れない、あなたが今日も稼働させている「1ミリも役に立たない無駄」の観測記録です。' +
   'どうぞ、堂々と持ち帰ってください。';
+
+/* 結果画面の末尾に置く公式注記 */
+const OFFICIAL_NOTE_TEXT =
+  '※万が一「1ミリもかすってない」と感じた場合、あなたが思っている以上にあなた自身がミステリアスな存在であります。' +
+  '当サービスでは測定不能です。申し訳ありません。';
+
+const OFFICIAL_NOTE = `
+  <aside class="official-note">
+    <p class="official-note-title">［測定不能に関する公式注記］</p>
+    <p class="official-note-text">${OFFICIAL_NOTE_TEXT}</p>
+  </aside>`;
 
 /* 16タイプ。sheetNo は元イラスト一覧での番号 */
 const TYPES = {
