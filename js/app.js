@@ -330,9 +330,11 @@
   /* ---------------------------------------------------------
      E. SNSシェア
      --------------------------------------------------------- */
-  function shareText(code) {
+  /* 全シェア共通の本文（URLは各サービスの流儀に合わせて別途付ける） */
+  function captionBody(code) {
     const type = TYPES[code];
-    return `私の無駄タイプは【${code}／${type.name}】でした。\n「${type.tagline}」\n#MDTI #無駄タイプ診断`;
+    return `私のMDTIは【${type.name}（${code}）】でした！\n〜${type.tagline}〜\n\n` +
+      `履歴書には書けない無駄を測定する「MDTI診断」\n#MDTI #無駄タイプインジケーター`;
   }
 
   function shareUrl(code) {
@@ -374,8 +376,37 @@
     window.open(url, '_blank', 'noopener,width=600,height=640');
   }
 
+  /* LINE / Instagram はアプリを直接起動するため、端末種別で分岐する */
+  function isMobileDevice() {
+    const ua = navigator.userAgent;
+    return /iPhone|iPad|iPod|Android/i.test(ua) ||
+      (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS
+  }
+
+  /* 本文とURLをひとつなぎにした共有文（アプリやクリップボード向け） */
+  function appCaption(code) {
+    return captionBody(code) + '\n' + shareUrl(code);
+  }
+
+  /* URLスキームでアプリを開き、開けなかった場合だけWebへ逃がす */
+  function openApp(scheme, webFallback) {
+    const timer = setTimeout(() => { location.href = webFallback; }, 1500);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearTimeout(timer);   // アプリが起動した
+    }, { once: true });
+    location.href = scheme;
+  }
+
+  /* ① LINE: ユニバーサルリンクでLINEアプリの送信先選択を直接開く
+        （PCでは公式の共有画面にフォールバックされる） */
+  function shareToLine(code) {
+    const url = 'https://line.me/R/msg/text/?' + encodeURIComponent(appCaption(code));
+    if (isMobileDevice()) location.href = url;
+    else openShare(url);
+  }
+
   async function handleShare(kind, code) {
-    const text = shareText(code);
+    const text = captionBody(code);
     const url = shareUrl(code);
 
     if (kind === 'x') {
@@ -383,7 +414,7 @@
       return;
     }
     if (kind === 'line') {
-      openShare('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text));
+      shareToLine(code);
       return;
     }
     if (kind === 'facebook') {
@@ -391,7 +422,7 @@
       return;
     }
     if (kind === 'copy') {
-      await copyToClipboard(text + '\n' + url);
+      await copyToClipboard(appCaption(code));
       return;
     }
     if (kind === 'instagram') {
@@ -410,7 +441,7 @@
           if (err && err.name !== 'AbortError') toast('シェアできませんでした');
         }
       } else {
-        await copyToClipboard(text + '\n' + url);
+        await copyToClipboard(appCaption(code), null);
         toast('この端末は共有メニュー非対応のため、内容をコピーしました');
       }
     }
@@ -594,8 +625,17 @@
     return canvas;
   }
 
+  /* 待たされ続けても処理が止まらないように上限を付ける */
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      Promise.resolve(promise).catch(() => undefined),
+      new Promise(resolve => setTimeout(resolve, ms))
+    ]);
+  }
+
   async function buildCardFile(code, variant) {
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    // Webフォントの読み込みが保留のままになる環境があるため待ちすぎない
+    if (document.fonts && document.fonts.ready) await withTimeout(document.fonts.ready, 1500);
     const canvas = await buildResultCanvas(code, variant);
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
@@ -614,36 +654,50 @@
   }
 
   async function saveResultImage(code) {
+    let file;
     try {
-      const file = await buildCardFile(code, 'og');
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareText(code) });
-        return;
-      }
-      downloadFile(file);
-      toast('結果画像を保存しました');
+      file = await buildCardFile(code, 'og');
     } catch (err) {
-      if (err && err.name === 'AbortError') return;
       toast('画像を生成できませんでした（ローカルサーバー経由で開いてください）');
+      return;
     }
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text: appCaption(code) });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;   // ユーザーが共有をキャンセル
+        // 共有できなかった場合は保存にフォールバックする
+      }
+    }
+
+    downloadFile(file);
+    toast('結果画像を保存しました');
   }
 
-  /* Instagramは投稿用のURLシェアに対応していないため、
-     縦長画像を共有シートに渡す（非対応環境では保存＋キャプションのコピー） */
+  /* ② Instagram: ブラウザからアプリへテキストを渡すURLスキームは存在しないため、
+        キャプションをコピー＋投稿用画像を保存したうえで、アプリを直接起動する */
   async function shareToInstagram(code) {
+    // クリップボードはユーザー操作の直後でないと拒否されるため最初に実行する
+    await withTimeout(copyToClipboard(appCaption(code), null), 1200);
+
+    let saved = true;
     try {
-      const file = await buildCardFile(code, 'portrait');
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareText(code) });
-        return;
-      }
-      downloadFile(file);
-      await copyToClipboard(shareText(code) + '\n' + shareUrl(code), null);
-      toast('画像を保存し、キャプションをコピーしました。Instagramアプリから投稿してください');
+      downloadFile(await buildCardFile(code, 'portrait'));
     } catch (err) {
-      if (err && err.name === 'AbortError') return;
-      toast('画像を生成できませんでした（ローカルサーバー経由で開いてください）');
+      saved = false;   // 画像が作れなくても、コピーとアプリ起動は続行する
     }
+
+    toast(saved
+      ? '投稿用画像を保存し、キャプションをコピーしました。Instagramに貼り付けて投稿してください'
+      : 'キャプションをコピーしました。Instagramに貼り付けて投稿してください');
+
+    // 保存処理が中断されないよう、少し待ってからアプリへ
+    setTimeout(() => {
+      if (isMobileDevice()) openApp('instagram://app', 'https://www.instagram.com/');
+      else window.open('https://www.instagram.com/', '_blank', 'noopener');
+    }, 700);
   }
 
   /* ---------------------------------------------------------
