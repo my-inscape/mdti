@@ -89,15 +89,42 @@
 
   /* ---------------------------------------------------------
      ルーティング（SPA風のシームレス遷移）
+     - アプリ内: ハッシュ（#/q/1, #/result/ORSD …）
+     - 外部共有: クエリ（?type=ORSD）※ X の t.co / アプリ内ブラウザは # を落とすため
      --------------------------------------------------------- */
+  const TYPE_RE = /^[OI][RC][SA][DK]$/;
+
+  function isTypeCode(code) {
+    return TYPE_RE.test(code) && !!TYPES[code];
+  }
+
+  /* 共有用クエリ ?type= を取り除く（トップ／再測定時） */
+  function clearShareQuery() {
+    if (!location.search) return;
+    try {
+      const next = location.pathname + (location.hash || '');
+      history.replaceState(null, '', next);
+    } catch (err) { /* file:// 等では無視 */ }
+  }
+
   function go(route) {
-    if (location.hash === route) render();
-    else location.hash = route;
+    try {
+      if (location.hash === route) render();
+      else location.hash = route;
+    } catch (err) {
+      render();
+    }
+  }
+
+  function goHome() {
+    clearShareQuery();
+    go('#/');
   }
 
   function showScreen(name) {
     Object.keys(screens).forEach(key => {
       const el = screens[key];
+      if (!el) return;
       if (key === name) {
         el.hidden = false;
         el.classList.remove('screen-enter');
@@ -109,45 +136,77 @@
     });
   }
 
-  function render() {
-    const hash = location.hash || '#/';
-
-    const qMatch = hash.match(/^#\/q\/(\d+)$/);
-    const rMatch = hash.match(/^#\/result\/([OI][RC][SA][DK])$/);
-    const tMatch = hash.match(/^#\/type\/([OI][RC][SA][DK])$/);
-
-    if (qMatch) {
-      const idx = Math.min(Math.max(parseInt(qMatch[1], 10) - 1, 0), QUESTIONS.length - 1);
-      // 未回答の問題を飛び越えた指定は、最初の未回答へ引き戻す
-      const firstUnanswered = state.answers.findIndex(a => a === null);
-      const limit = firstUnanswered === -1 ? QUESTIONS.length - 1 : firstUnanswered;
-      state.current = Math.min(idx, limit);
-      if (state.current !== idx) {
-        // file:// では replaceState が使えないので、失敗しても表示は続行する
-        try { history.replaceState(null, '', '#/q/' + (state.current + 1)); } catch (err) { /* noop */ }
-      }
-      showScreen('question');
-      renderQuestion();
-      scrollTop();
+  function showTypeResult(code, opts) {
+    const options = opts || {};
+    if (!isTypeCode(code)) {
+      goHome();
       return;
     }
-
-    if (rMatch || tMatch) {
-      const code = (rMatch || tMatch)[1];
-      if (!TYPES[code]) { go('#/'); return; }
-      const mine = rMatch && state.result && state.result.code === code;
-      showScreen('result');
-      renderResult(code, mine ? state.result.axes : null);
-      scrollTop();
-      return;
+    const allowMine = options.allowMine !== false;
+    const mine = !!(allowMine && state.result && state.result.code === code);
+    showScreen('result');
+    renderResult(code, mine ? state.result.axes : null);
+    // 共有リンク経由なら URL を ?type= に正規化（ハッシュ残骸を消す）
+    if (options.fromShare) {
+      try {
+        const clean = location.pathname + '?type=' + code;
+        if (location.search !== '?type=' + code || location.hash) {
+          history.replaceState(null, '', clean);
+        }
+      } catch (err) { /* noop */ }
     }
-
-    showScreen('intro');
     scrollTop();
   }
 
+  function render() {
+    try {
+      // 1) 共有URL: ?type=IRSD （Xアプリ内ブラウザ向け・最優先）
+      const typeParam = (new URLSearchParams(location.search).get('type') || '').toUpperCase();
+      if (typeParam) {
+        showTypeResult(typeParam, { fromShare: true, allowMine: true });
+        return;
+      }
+
+      // 2) アプリ内ハッシュ（旧共有の #/result/xxx も互換表示）
+      const hash = location.hash || '#/';
+      const qMatch = hash.match(/^#\/q\/(\d+)$/);
+      const rMatch = hash.match(/^#\/result\/([OI][RC][SA][DK])$/);
+      const tMatch = hash.match(/^#\/type\/([OI][RC][SA][DK])$/);
+
+      if (qMatch) {
+        const idx = Math.min(Math.max(parseInt(qMatch[1], 10) - 1, 0), QUESTIONS.length - 1);
+        const firstUnanswered = state.answers.findIndex(a => a === null);
+        const limit = firstUnanswered === -1 ? QUESTIONS.length - 1 : firstUnanswered;
+        state.current = Math.min(idx, limit);
+        if (state.current !== idx) {
+          try { history.replaceState(null, '', '#/q/' + (state.current + 1)); } catch (err) { /* noop */ }
+        }
+        showScreen('question');
+        renderQuestion();
+        scrollTop();
+        return;
+      }
+
+      if (rMatch) {
+        showTypeResult(rMatch[1], { fromShare: false, allowMine: true });
+        return;
+      }
+
+      if (tMatch) {
+        showTypeResult(tMatch[1], { fromShare: false, allowMine: false });
+        return;
+      }
+
+      showScreen('intro');
+      scrollTop();
+    } catch (err) {
+      // 描画例外でも白画面にせずトップを出す（Xアプリ内ブラウザ対策）
+      try { showScreen('intro'); } catch (e2) { /* noop */ }
+    }
+  }
+
   function scrollTop() {
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (err) { window.scrollTo(0, 0); }
   }
 
   /* ---------------------------------------------------------
@@ -174,6 +233,7 @@
     state.current = 0;
     state.result = null;
     persist();
+    clearShareQuery();
     go('#/q/1');
   }
 
@@ -243,7 +303,11 @@
       } else {
         state.result = diagnose(state.answers);
         trackDiagnosisComplete(state.result.code);
-        go('#/result/' + state.result.code);
+        // 結果URLも共有と同じ ?type= 形式に揃える（ハッシュはXで不安定）
+        try {
+          history.replaceState(null, '', location.pathname + '?type=' + state.result.code);
+        } catch (err) { /* noop */ }
+        showTypeResult(state.result.code, { fromShare: false, allowMine: true });
       }
     }, 260);
   }
@@ -376,8 +440,8 @@
   }
 
   function shareUrl(code) {
-    // 共有URLは常に本番 https（OGPカード表示・http混在防止）
-    return 'https://muda.my-inscape.com/#/result/' + code;
+    // X の t.co / アプリ内ブラウザは #fragment を落とすためクエリで共有する
+    return 'https://muda.my-inscape.com/?type=' + encodeURIComponent(code);
   }
 
   function shareBlock() {
@@ -699,14 +763,18 @@
     if (actionEl) {
       const action = actionEl.dataset.action;
       if (action === 'start' || action === 'restart') startDiagnosis();
-      else if (action === 'home') go('#/');
+      else if (action === 'home') goHome();
       else if (action === 'back-question') backQuestion();
       else if (action === 'open-gallery') toggleGallery(true);
       else if (action === 'close-gallery') toggleGallery(false);
       return;
     }
 
-    if (event.target.closest('[data-nav]')) return;
+    if (event.target.closest('[data-nav]')) {
+      event.preventDefault();
+      goHome();
+      return;
+    }
     if (event.target === $('#gallery')) toggleGallery(false);
   });
 
@@ -723,6 +791,7 @@
   });
 
   window.addEventListener('hashchange', render);
+  window.addEventListener('popstate', render);
 
   restore();
   renderAxisIntro();
