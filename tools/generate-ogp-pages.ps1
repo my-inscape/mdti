@@ -89,7 +89,6 @@ function New-ResultPage($item) {
 
   $img = $site + '/assets/ogp/' + $code + '.png'
   $pageUrl = $site + '/result/' + $code + '/'
-  $redirect = '/?result=' + $code
 
   $sb = New-Object System.Text.StringBuilder
   [void]$sb.AppendLine('<!DOCTYPE html>')
@@ -99,10 +98,12 @@ function New-ResultPage($item) {
   [void]$sb.AppendLine('<title>' + (HtmlEnc $pageTitle) + '</title>')
   [void]$sb.AppendLine('<meta name="description" content="' + (HtmlEnc $ogDesc) + '">')
   [void]$sb.AppendLine('<meta property="og:type" content="website">')
+  [void]$sb.AppendLine('<meta property="og:site_name" content="MUDA">')
   [void]$sb.AppendLine('<meta property="og:url" content="' + $pageUrl + '">')
   [void]$sb.AppendLine('<meta property="og:title" content="' + (HtmlEnc $ogTitle) + '">')
   [void]$sb.AppendLine('<meta property="og:description" content="' + (HtmlEnc $ogDesc) + '">')
   [void]$sb.AppendLine('<meta property="og:image" content="' + $img + '">')
+  [void]$sb.AppendLine('<meta property="og:image:secure_url" content="' + $img + '">')
   [void]$sb.AppendLine('<meta property="og:image:width" content="1200">')
   [void]$sb.AppendLine('<meta property="og:image:height" content="630">')
   [void]$sb.AppendLine('<meta property="og:image:type" content="image/png">')
@@ -112,13 +113,14 @@ function New-ResultPage($item) {
   [void]$sb.AppendLine('<meta name="twitter:image" content="' + $img + '">')
   [void]$sb.AppendLine('<link rel="canonical" href="' + $pageUrl + '">')
   [void]$sb.AppendLine('<style>body{margin:0;font-family:"Yu Gothic UI","Hiragino Sans",sans-serif;background:#faf8f5;color:#3a3530;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;text-align:center}a{color:#6e665c}.card{max-width:420px}img{width:100%;max-width:360px;height:auto;border-radius:20px;background:#fff}h1{font-size:1.25rem;margin:16px 0 8px}p{font-size:.95rem;line-height:1.7;color:#6e665c}</style>')
-  [void]$sb.AppendLine('<script>(function(){var ua=navigator.userAgent||"";if(/Twitterbot|facebookexternalhit|LinkedInBot|Slackbot|Discordbot|WhatsApp/i.test(ua))return;location.replace("' + $redirect + '");})();</script>')
-  [void]$sb.AppendLine('<noscript><meta http-equiv="refresh" content="0;url=' + $redirect + '"></noscript>')
+  # Humans redirect to top; crawlers (no JS) keep reading OGP meta above.
+  [void]$sb.AppendLine('<script>window.location.href = ''/'';</script>')
+  [void]$sb.AppendLine('<noscript><meta http-equiv="refresh" content="0;url=/"></noscript>')
   [void]$sb.AppendLine('</head><body><div class="card">')
-  [void]$sb.AppendLine('<img src="/assets/ogp/' + $code + '.png" alt="' + (HtmlEnc $name) + ' (' + $code + ')">')
+  [void]$sb.AppendLine('<img src="' + $img + '" alt="' + (HtmlEnc $name) + ' (' + $code + ')">')
   [void]$sb.AppendLine('<h1>' + (HtmlEnc $name) + ' (' + $code + ')</h1>')
   [void]$sb.AppendLine('<p>' + (HtmlEnc ($d1 + $tagline + $d1)) + '</p>')
-  [void]$sb.AppendLine('<p><a href="' + $redirect + '">' + (HtmlEnc $showLabel) + '</a></p>')
+  [void]$sb.AppendLine('<p><a href="/">' + (HtmlEnc $showLabel) + '</a></p>')
   [void]$sb.AppendLine('</div></body></html>')
 
   $dir = Join-Path $resultRoot $code
