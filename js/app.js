@@ -54,6 +54,17 @@
     return { code: axes.map(a => a.letter).join(''), axes };
   }
 
+  /* GA4: 診断完了（受検者数・タイプ分布） */
+  function trackDiagnosisComplete(code) {
+    if (typeof gtag !== 'function') return;
+    const type = TYPES[code];
+    if (!type) return;
+    gtag('event', 'diagnosis_complete', {
+      muda_type: code,
+      type_name: type.name
+    });
+  }
+
   /* ---------------------------------------------------------
      回答の一時保存（リロードしても途中から / 結果を復元できる）
      --------------------------------------------------------- */
@@ -231,6 +242,7 @@
         go('#/q/' + (idx + 2));
       } else {
         state.result = diagnose(state.answers);
+        trackDiagnosisComplete(state.result.code);
         go('#/result/' + state.result.code);
       }
     }, 260);
