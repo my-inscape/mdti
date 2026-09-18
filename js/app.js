@@ -89,8 +89,9 @@
 
   /* ---------------------------------------------------------
      ルーティング（SPA風のシームレス遷移）
-     - アプリ内: ハッシュ（#/q/1, #/result/ORSD …）
-     - 外部共有: クエリ（?type=ORSD）※ X の t.co / アプリ内ブラウザは # を落とすため
+     - アプリ内: ハッシュ（#/q/1 …）
+     - 外部共有: /result/IRSK/ （静的OGP）→ /?result=IRSK へリダイレクト
+     - 互換: ?type= / #/result/
      --------------------------------------------------------- */
   const TYPE_RE = /^[OI][RC][SA][DK]$/;
 
@@ -98,12 +99,23 @@
     return TYPE_RE.test(code) && !!TYPES[code];
   }
 
-  /* 共有用クエリ ?type= を取り除く（トップ／再測定時） */
-  function clearShareQuery() {
-    if (!location.search) return;
+  /* URL から共有タイプコードを取り出す（複数形式対応） */
+  function sharedTypeFromUrl() {
     try {
-      const next = location.pathname + (location.hash || '');
-      history.replaceState(null, '', next);
+      const params = new URLSearchParams(location.search);
+      const q = (params.get('result') || params.get('type') || '').toUpperCase();
+      if (isTypeCode(q)) return q;
+
+      const path = (location.pathname || '').match(/\/result\/([OI][RC][SA][DK])\/?$/i);
+      if (path && isTypeCode(path[1].toUpperCase())) return path[1].toUpperCase();
+    } catch (err) { /* noop */ }
+    return null;
+  }
+
+  /* 共有用クエリ／パスを取り除く（トップ／再測定時） */
+  function clearShareQuery() {
+    try {
+      history.replaceState(null, '', '/');
     } catch (err) { /* file:// 等では無視 */ }
   }
 
@@ -117,8 +129,11 @@
   }
 
   function goHome() {
-    clearShareQuery();
-    go('#/');
+    try {
+      history.replaceState(null, '', '/');
+    } catch (err) { /* noop */ }
+    try { location.hash = '#/'; } catch (err2) { /* noop */ }
+    render();
   }
 
   function showScreen(name) {
@@ -146,11 +161,11 @@
     const mine = !!(allowMine && state.result && state.result.code === code);
     showScreen('result');
     renderResult(code, mine ? state.result.axes : null);
-    // 共有リンク経由なら URL を ?type= に正規化（ハッシュ残骸を消す）
+    // 共有経由は /?result=CODE に正規化（ハッシュや旧 ?type= を消す）
     if (options.fromShare) {
       try {
-        const clean = location.pathname + '?type=' + code;
-        if (location.search !== '?type=' + code || location.hash) {
+        const clean = '/?result=' + code;
+        if (location.pathname + location.search !== '/?result=' + code || location.hash) {
           history.replaceState(null, '', clean);
         }
       } catch (err) { /* noop */ }
@@ -160,14 +175,14 @@
 
   function render() {
     try {
-      // 1) 共有URL: ?type=IRSD （Xアプリ内ブラウザ向け・最優先）
-      const typeParam = (new URLSearchParams(location.search).get('type') || '').toUpperCase();
-      if (typeParam) {
-        showTypeResult(typeParam, { fromShare: true, allowMine: true });
+      // 1) 共有: ?result= / ?type= / /result/CODE/
+      const shared = sharedTypeFromUrl();
+      if (shared) {
+        showTypeResult(shared, { fromShare: true, allowMine: true });
         return;
       }
 
-      // 2) アプリ内ハッシュ（旧共有の #/result/xxx も互換表示）
+      // 2) アプリ内ハッシュ
       const hash = location.hash || '#/';
       const qMatch = hash.match(/^#\/q\/(\d+)$/);
       const rMatch = hash.match(/^#\/result\/([OI][RC][SA][DK])$/);
@@ -200,7 +215,6 @@
       showScreen('intro');
       scrollTop();
     } catch (err) {
-      // 描画例外でも白画面にせずトップを出す（Xアプリ内ブラウザ対策）
       try { showScreen('intro'); } catch (e2) { /* noop */ }
     }
   }
@@ -303,9 +317,8 @@
       } else {
         state.result = diagnose(state.answers);
         trackDiagnosisComplete(state.result.code);
-        // 結果URLも共有と同じ ?type= 形式に揃える（ハッシュはXで不安定）
         try {
-          history.replaceState(null, '', location.pathname + '?type=' + state.result.code);
+          history.replaceState(null, '', '/?result=' + state.result.code);
         } catch (err) { /* noop */ }
         showTypeResult(state.result.code, { fromShare: false, allowMine: true });
       }
@@ -440,8 +453,8 @@
   }
 
   function shareUrl(code) {
-    // X の t.co / アプリ内ブラウザは #fragment を落とすためクエリで共有する
-    return 'https://muda.my-inscape.com/?type=' + encodeURIComponent(code);
+    // タイプ専用の静的OGPページ（Twitterbot が JS なしで画像を読める）
+    return 'https://muda.my-inscape.com/result/' + encodeURIComponent(code) + '/';
   }
 
   function shareBlock() {
@@ -754,7 +767,7 @@
 
     const shareBtn = event.target.closest('[data-share]');
     if (shareBtn) {
-      const code = state.result ? state.result.code : null;
+      const code = (state.result && state.result.code) || sharedTypeFromUrl();
       if (code) handleShare(shareBtn.dataset.share, code);
       return;
     }
@@ -793,8 +806,12 @@
   window.addEventListener('hashchange', render);
   window.addEventListener('popstate', render);
 
-  restore();
-  renderAxisIntro();
-  renderGallery();
-  render();
+  try {
+    restore();
+    renderAxisIntro();
+    renderGallery();
+    render();
+  } catch (err) {
+    try { showScreen('intro'); } catch (e2) { /* noop */ }
+  }
 })();
