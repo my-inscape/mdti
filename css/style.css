@@ -689,13 +689,15 @@ button { font: inherit; color: inherit; }
 }
 .share-btn:hover { transform: translateY(-1px); border-color: var(--ink-soft); }
 .share-btn svg { width: 18px; height: 18px; flex: none; }
-.share-btn-primary {
+.share-btn.x {
   min-height: 58px;
   font-size: 15px;
   letter-spacing: .02em;
+  background: #1a1a1c;
+  border-color: #1a1a1c;
+  color: #fff;
   box-shadow: 0 4px 14px -8px rgba(26, 26, 28, .55);
 }
-.share-btn.x { background: #1a1a1c; border-color: #1a1a1c; color: #fff; }
 .share-btn.line { background: #06c755; border-color: #06c755; color: #fff; }
 .share-link {
   margin-top: 2px;

@@ -129,10 +129,8 @@
   }
 
   function goHome() {
-    try {
-      history.replaceState(null, '', '/');
-    } catch (err) { /* noop */ }
-    try { location.hash = '#/'; } catch (err2) { /* noop */ }
+    clearShareQuery();
+    try { location.hash = '#/'; } catch (err) { /* noop */ }
     render();
   }
 
@@ -456,7 +454,7 @@
         <h3>この無駄を、世に放流する</h3>
         <p class="share-lead">診断結果をシェアすると、同じ無駄を持つ共犯者が見つかります。</p>
         <div class="share-buttons">
-          <button class="share-btn x share-btn-primary" type="button" data-share="x">
+          <button class="share-btn x" type="button" data-share="x">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L22.8 22h-6.4l-4.6-6-5.3 6H1.4l7.3-8.3L1.6 2H8l4.3 5.6L18.9 2Zm-1.1 18h1.7L6.4 3.8H4.6L17.8 20Z"/></svg>
             Xでシェア
           </button>
