@@ -376,9 +376,8 @@
   }
 
   function shareUrl(code) {
-    return location.origin && location.origin !== 'null'
-      ? location.origin + location.pathname + '#/result/' + code
-      : location.href;
+    // 共有URLは常に本番 https（OGPカード表示・http混在防止）
+    return 'https://muda.my-inscape.com/#/result/' + code;
   }
 
   function shareBlock() {
