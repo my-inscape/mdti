@@ -173,14 +173,7 @@
 
   function render() {
     try {
-      // 1) 共有: ?result= / ?type= / /result/CODE/
-      const shared = sharedTypeFromUrl();
-      if (shared) {
-        showTypeResult(shared, { fromShare: true, allowMine: true });
-        return;
-      }
-
-      // 2) アプリ内ハッシュ
+      // アプリ内ハッシュは ?result= より優先（結果表示後に図鑑・相性から別タイプへ移れるように）
       const hash = location.hash || '#/';
       const qMatch = hash.match(/^#\/q\/(\d+)$/);
       const rMatch = hash.match(/^#\/result\/([OI][RC][SA][DK])$/);
@@ -207,6 +200,12 @@
 
       if (tMatch) {
         showTypeResult(tMatch[1], { fromShare: false, allowMine: false });
+        return;
+      }
+
+      const shared = sharedTypeFromUrl();
+      if (shared) {
+        showTypeResult(shared, { fromShare: true, allowMine: true });
         return;
       }
 
