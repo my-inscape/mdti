@@ -171,6 +171,19 @@
     scrollTop();
   }
 
+  /* 図鑑・相性から他タイプを見たあと、自分の結果へ戻る */
+  function showMyResult() {
+    if (!state.result) {
+      goHome();
+      return;
+    }
+    const code = state.result.code;
+    try {
+      history.pushState(null, '', '/?result=' + code);
+    } catch (err) { /* file:// 等では URL 更新をあきらめて表示だけ切り替える */ }
+    showTypeResult(code, { allowMine: true });
+  }
+
   function render() {
     try {
       // アプリ内ハッシュは ?result= より優先（結果表示後に図鑑・相性から別タイプへ移れるように）
@@ -378,9 +391,18 @@
   function renderResult(code, axes) {
     const type = TYPES[code];
     const isMine = !!axes;
+    const canReturn = !isMine && !!state.result;
+    const myCode = canReturn ? state.result.code : '';
 
     $('#result-body').innerHTML = `
       <div data-hue="${type.hue}">
+        ${canReturn ? `
+        <div class="my-result-back">
+          <button class="back-btn" type="button" data-action="my-result">
+            <span class="back-arrow" aria-hidden="true">←</span>
+            自分の診断結果（${myCode}）に戻る
+          </button>
+        </div>` : ''}
         <p class="result-note">${isMine ? 'YOUR MUDA TYPE' : 'MUDA TYPE ARCHIVE'}</p>
 
         <div class="type-card">
@@ -417,9 +439,13 @@
         ${isMine ? shareBlock() : ''}
 
         <div class="result-actions">
+          ${canReturn ? `
+          <button class="primary-btn" type="button" data-action="my-result">
+            自分の診断結果（${myCode}）に戻る
+          </button>` : `
           <button class="primary-btn" type="button" data-action="${isMine ? 'restart' : 'start'}">
             ${isMine ? 'もう一度、無駄を測定する' : '自分の無駄タイプを測定する（全8問）'}
-          </button>
+          </button>`}
           <button class="ghost-btn" type="button" data-action="open-gallery">16タイプ一覧を見る</button>
           <button class="text-btn" type="button" data-action="home">ホームに戻る</button>
         </div>
@@ -767,6 +793,7 @@
       const action = actionEl.dataset.action;
       if (action === 'start' || action === 'restart') startDiagnosis();
       else if (action === 'home') goHome();
+      else if (action === 'my-result') showMyResult();
       else if (action === 'back-question') backQuestion();
       else if (action === 'open-gallery') toggleGallery(true);
       else if (action === 'close-gallery') toggleGallery(false);

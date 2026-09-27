@@ -411,6 +411,8 @@ button { font: inherit; color: inherit; }
 
 /* ---------- D. result ---------- */
 
+.my-result-back { display: flex; justify-content: center; margin: 4px 0 18px; }
+
 .result-note {
   margin: 6px 0 18px;
   text-align: center;
